@@ -1,0 +1,13 @@
+{
+  "name": "budget-app",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "mobile",
+    "backend"
+  ],
+  "scripts": {
+    "backend": "npm run dev --workspace=backend",
+    "mobile": "npm run start --workspace=mobile"
+  }
+}
