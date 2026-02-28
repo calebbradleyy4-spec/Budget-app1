@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 
 const KEYS = {
@@ -6,33 +7,56 @@ const KEYS = {
   USER: 'budget_user',
 } as const;
 
+async function setItem(key: string, value: string): Promise<void> {
+  if (Platform.OS === 'web') {
+    localStorage.setItem(key, value);
+  } else {
+    await SecureStore.setItemAsync(key, value);
+  }
+}
+
+async function getItem(key: string): Promise<string | null> {
+  if (Platform.OS === 'web') {
+    return localStorage.getItem(key);
+  }
+  return SecureStore.getItemAsync(key);
+}
+
+async function removeItem(key: string): Promise<void> {
+  if (Platform.OS === 'web') {
+    localStorage.removeItem(key);
+  } else {
+    await SecureStore.deleteItemAsync(key);
+  }
+}
+
 export async function saveTokens(accessToken: string, refreshToken: string): Promise<void> {
-  await SecureStore.setItemAsync(KEYS.ACCESS_TOKEN, accessToken);
-  await SecureStore.setItemAsync(KEYS.REFRESH_TOKEN, refreshToken);
+  await setItem(KEYS.ACCESS_TOKEN, accessToken);
+  await setItem(KEYS.REFRESH_TOKEN, refreshToken);
 }
 
 export async function getAccessToken(): Promise<string | null> {
-  return SecureStore.getItemAsync(KEYS.ACCESS_TOKEN);
+  return getItem(KEYS.ACCESS_TOKEN);
 }
 
 export async function getRefreshToken(): Promise<string | null> {
-  return SecureStore.getItemAsync(KEYS.REFRESH_TOKEN);
+  return getItem(KEYS.REFRESH_TOKEN);
 }
 
 export async function clearTokens(): Promise<void> {
-  await SecureStore.deleteItemAsync(KEYS.ACCESS_TOKEN);
-  await SecureStore.deleteItemAsync(KEYS.REFRESH_TOKEN);
+  await removeItem(KEYS.ACCESS_TOKEN);
+  await removeItem(KEYS.REFRESH_TOKEN);
 }
 
 export async function saveUser(user: object): Promise<void> {
-  await SecureStore.setItemAsync(KEYS.USER, JSON.stringify(user));
+  await setItem(KEYS.USER, JSON.stringify(user));
 }
 
 export async function getUser<T>(): Promise<T | null> {
-  const raw = await SecureStore.getItemAsync(KEYS.USER);
+  const raw = await getItem(KEYS.USER);
   return raw ? (JSON.parse(raw) as T) : null;
 }
 
 export async function clearUser(): Promise<void> {
-  await SecureStore.deleteItemAsync(KEYS.USER);
+  await removeItem(KEYS.USER);
 }
