@@ -1,7 +1,13 @@
 {
   "files": [],
   "references": [
-    { "path": "./backend" },
-    { "path": "./mobile" }
-  ]
+    {
+      "path": "./backend"
+    },
+    {
+      "path": "./mobile"
+    }
+  ],
+  "compilerOptions": {},
+  "extends": "expo/tsconfig.base"
 }
