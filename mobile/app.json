@@ -3,6 +3,7 @@
     "name": "Budget App",
     "slug": "budget-app",
     "version": "1.0.0",
+    "entryPoint": "./index.ts",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
