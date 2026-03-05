@@ -42,7 +42,7 @@ export interface TransactionDTO {
 }
 
 export interface CreateTransactionInput {
-  category_id: number;
+  category_id?: number;
   type: 'income' | 'expense';
   amount: number;
   description?: string;

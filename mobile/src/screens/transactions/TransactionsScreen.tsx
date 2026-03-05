@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  RefreshControl, Alert, Modal, ScrollView,
+  RefreshControl, Alert, Modal, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator,
 } from 'react-native';
 import { useTransactionsStore } from '../../store/transactions.store';
 import { useCategoriesStore } from '../../store/categories.store';
@@ -10,12 +10,11 @@ import EmptyState from '../../components/common/EmptyState';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import { toYYYYMMDD } from '../../utils/date';
-import type { CategoryDTO } from '../../types/shared';
 
 export default function TransactionsScreen() {
   const { transactions, total, totalPages, page, fetchTransactions, createTransaction, deleteTransaction } =
     useTransactionsStore();
-  const { categories, fetchCategories } = useCategoriesStore();
+  const { categories, fetchCategories, isLoading: categoriesLoading, error: categoriesError } = useCategoriesStore();
 
   const [refreshing, setRefreshing] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -116,65 +115,78 @@ export default function TransactionsScreen() {
       </TouchableOpacity>
 
       <Modal visible={showAddModal} animationType="slide" presentationStyle="pageSheet">
-        <ScrollView style={styles.modal}>
-          <Text style={styles.modalTitle}>Add Transaction</Text>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          <ScrollView style={styles.modal} keyboardShouldPersistTaps="handled">
+            <Text style={styles.modalTitle}>Add Transaction</Text>
 
-          <View style={styles.typeToggle}>
-            {(['expense', 'income'] as const).map((t) => (
-              <TouchableOpacity
-                key={t}
-                style={[styles.typeBtn, form.type === t && styles.typeBtnActive]}
-                onPress={() => setForm({ ...form, type: t, category_id: 0 })}
-              >
-                <Text style={[styles.typeBtnText, form.type === t && styles.typeBtnTextActive]}>
-                  {t.charAt(0).toUpperCase() + t.slice(1)}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+            <View style={styles.typeToggle}>
+              {(['expense', 'income'] as const).map((t) => (
+                <TouchableOpacity
+                  key={t}
+                  style={[styles.typeBtn, form.type === t && styles.typeBtnActive]}
+                  onPress={() => setForm({ ...form, type: t, category_id: 0 })}
+                >
+                  <Text style={[styles.typeBtnText, form.type === t && styles.typeBtnTextActive]}>
+                    {t.charAt(0).toUpperCase() + t.slice(1)}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
 
-          <Input
-            label="Amount"
-            value={form.amount}
-            onChangeText={(v) => setForm({ ...form, amount: v })}
-            placeholder="0.00"
-            keyboardType="decimal-pad"
-          />
-          <Input
-            label="Description"
-            value={form.description}
-            onChangeText={(v) => setForm({ ...form, description: v })}
-            placeholder="Optional"
-          />
-          <Input
-            label="Date (YYYY-MM-DD)"
-            value={form.date}
-            onChangeText={(v) => setForm({ ...form, date: v })}
-          />
+            <Input
+              label="Amount"
+              value={form.amount}
+              onChangeText={(v) => setForm({ ...form, amount: v })}
+              placeholder="0.00"
+              keyboardType="decimal-pad"
+            />
+            <Input
+              label="Description"
+              value={form.description}
+              onChangeText={(v) => setForm({ ...form, description: v })}
+              placeholder="Optional"
+            />
+            <Input
+              label="Date (YYYY-MM-DD)"
+              value={form.date}
+              onChangeText={(v) => setForm({ ...form, date: v })}
+            />
 
-          <Text style={styles.label}>Category</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
-            {filteredCategories.map((cat) => (
-              <TouchableOpacity
-                key={cat.id}
-                style={[styles.catChip, form.category_id === cat.id && { backgroundColor: cat.color }]}
-                onPress={() => setForm({ ...form, category_id: cat.id })}
-              >
-                <Text style={[styles.catChipText, form.category_id === cat.id && styles.catChipTextActive]}>
-                  {cat.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
+            <Text style={styles.label}>Category</Text>
+            {categoriesLoading ? (
+              <ActivityIndicator size="small" color="#6366f1" style={{ marginVertical: 12 }} />
+            ) : categoriesError ? (
+              <Text style={styles.categoryError}>Failed to load categories. Pull down to refresh.</Text>
+            ) : filteredCategories.length === 0 ? (
+              <Text style={styles.categoryError}>No {form.type} categories available.</Text>
+            ) : (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
+                {filteredCategories.map((cat) => (
+                  <TouchableOpacity
+                    key={cat.id}
+                    style={[styles.catChip, form.category_id === cat.id && { backgroundColor: cat.color }]}
+                    onPress={() => setForm({ ...form, category_id: cat.id })}
+                  >
+                    <Text style={[styles.catChipText, form.category_id === cat.id && styles.catChipTextActive]}>
+                      {cat.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
+
+            <Button title="Save Transaction" onPress={handleAdd} loading={saving} style={styles.saveBtn} />
+            <Button
+              title="Cancel"
+              variant="outline"
+              onPress={() => setShowAddModal(false)}
+              style={styles.cancelBtn}
+            />
           </ScrollView>
-
-          <Button title="Save Transaction" onPress={handleAdd} loading={saving} style={styles.saveBtn} />
-          <Button
-            title="Cancel"
-            variant="outline"
-            onPress={() => setShowAddModal(false)}
-            style={styles.cancelBtn}
-          />
-        </ScrollView>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -205,6 +217,7 @@ const styles = StyleSheet.create({
   },
   catChipText: { color: '#374151', fontSize: 13 },
   catChipTextActive: { color: '#fff' },
+  categoryError: { color: '#6b7280', fontSize: 13, marginBottom: 16, fontStyle: 'italic' },
   saveBtn: { marginTop: 8 },
   cancelBtn: { marginTop: 8, marginBottom: 40 },
 });

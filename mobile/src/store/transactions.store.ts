@@ -28,13 +28,15 @@ export const useTransactionsStore = create<TransactionsState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const data = await txApi.getTransactions(params);
-      set({
-        transactions: data.data,
+      set((state) => ({
+        transactions: params.page && params.page > 1
+          ? [...state.transactions, ...data.data]
+          : data.data,
         total: data.total,
         page: data.page,
         totalPages: data.totalPages,
         isLoading: false,
-      });
+      }));
     } catch (err: any) {
       set({ error: err?.message || 'Failed to load transactions', isLoading: false });
     }

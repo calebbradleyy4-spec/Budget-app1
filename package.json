@@ -4,10 +4,12 @@
   "private": true,
   "workspaces": [
     "mobile",
-    "backend"
+    "backend",
+    "web"
   ],
   "scripts": {
     "backend": "npm run dev --workspace=backend",
-    "mobile": "npm run start --workspace=mobile"
+    "mobile": "npm run start --workspace=mobile",
+    "web": "npm run dev --workspace=web"
   }
 }

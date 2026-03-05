@@ -92,12 +92,14 @@ export function getTransaction(userId: number, id: number): TransactionDTO {
 export function createTransaction(userId: number, input: CreateTransactionInput): TransactionDTO {
   const db = getDb();
 
-  // Verify category belongs to user or is default
-  const cat = db
-    .prepare('SELECT id FROM categories WHERE id = ? AND (user_id IS NULL OR user_id = ?)')
-    .get(input.category_id, userId);
-  if (!cat) {
-    throw Object.assign(new Error('Category not found'), { statusCode: 404, code: 'NOT_FOUND' });
+  // Verify category belongs to user or is default (only when provided)
+  if (input.category_id != null) {
+    const cat = db
+      .prepare('SELECT id FROM categories WHERE id = ? AND (user_id IS NULL OR user_id = ?)')
+      .get(input.category_id, userId);
+    if (!cat) {
+      throw Object.assign(new Error('Category not found'), { statusCode: 404, code: 'NOT_FOUND' });
+    }
   }
 
   const result = db
@@ -107,7 +109,7 @@ export function createTransaction(userId: number, input: CreateTransactionInput)
     )
     .run(
       userId,
-      input.category_id,
+      input.category_id ?? null,
       input.type,
       input.amount,
       input.description ?? '',
